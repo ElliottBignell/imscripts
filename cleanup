@@ -1,0 +1,18 @@
+for prefix in "DSC" "mantiuk" "dsc" "out"; do
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | awk '{ print "mv ../work/" $1 " ../waste/"; }' 
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | awk '{ print "mv ../backup/" $1 " ../waste/"; }' 
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | awk '{ print "mv ../raw/" $1 " ../waste/"; }' 
+done
+
+for prefix in "out"; do
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | sed "s:\.\*:-0\.\*:" | awk '{ print "mv ../work/" $1 " ../waste/"; }' 
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | sed "s:\.\*:-0\.\*:" | awk '{ print "mv ../backup/" $1 " ../waste/"; }' 
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | sed "s:\.\*:-1\.\*:" | awk '{ print "mv ../work/" $1 " ../waste/"; }' 
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | sed "s:\.\*:-1\.\*:" | awk '{ print "mv ../backup/" $1 " ../waste/"; }' 
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | sed "s:\.\*:-2\.\*:" | awk '{ print "mv ../work/" $1 " ../waste/"; }' 
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | sed "s:\.\*:-2\.\*:" | awk '{ print "mv ../backup/" $1 " ../waste/"; }' 
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | sed "s:\.\*:-3\.\*:" | awk '{ print "mv ../work/" $1 " ../waste/"; }' 
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | sed "s:\.\*:-3\.\*:" | awk '{ print "mv ../backup/" $1 " ../waste/"; }' 
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | sed "s:\.\*:-4\.\*:" | awk '{ print "mv ../work/" $1 " ../waste/"; }' 
+	ls mantiuk_*.jpg | egrep [0-9]{4}-mantiuk | sed s:mantiuk_::g | sed s:[\.jpgm]::g | sed "s:-: :g" | awk -v pre=${prefix} '{ for (i = $1; i <= $2; i++) { printf "%s_%04d.*\n", pre, i; } }' | sort | uniq | sed "s:\.\*:-4\.\*:" | awk '{ print "mv ../backup/" $1 " ../waste/"; }' 
+done

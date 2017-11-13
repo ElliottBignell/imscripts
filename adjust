@@ -1,0 +1,12 @@
+  ( echo "0.0 0.0";  echo "1.0 1.0"; echo "0.73 0.68"; )   > red.txt
+  ( echo "0.0 0.0";  echo "1.0 1.0"; echo "0.57 0.68"; )   > blue.txt
+
+  ( echo 'f(x) = b*x**2 + c*x + d'; \
+    echo 'fit f(x) "red.txt" via b, c, d'; \
+    echo 'print b,"*u^2 + ",c,"*u + ",d'; \
+  ) | gnuplot 2>&1 | tail -1             > red_funct.txt
+
+  ( echo 'f(x) = b*x**2 + c*x + d'; \
+    echo 'fit f(x) "blue.txt" via b, c, d'; \
+    echo 'print b,"*u^2 + ",c,"*u + ",d'; \
+  ) | gnuplot 2>&1 | tail -1             > blue_funct.txt

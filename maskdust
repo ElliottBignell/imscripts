@@ -1,0 +1,8 @@
+(while read file; do
+	echo $file
+	exiftool -tag -ProcessingSoftware="" $file 
+	ls | grep original | xargs rm
+	convert $file -channel RGBA -blur 0x40 blur_$file
+	composite $file blur_$file mask.tif masked_$file
+	rm blur_$file
+done) 

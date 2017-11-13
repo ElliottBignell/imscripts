@@ -1,0 +1,2 @@
+ls ../Bretagne/ | grep - | sed "s:-: :" | sed s:[.].*$:: | sed s:[a-z_]::g | awk '{ for(i=$1;i<=$2+2;i++) { print "ls | grep " i; } }' | sh | xargs -I {} mv {} junk/
+

@@ -1,0 +1,15 @@
+  ( echo "0.0 0.0";  echo "1.0 1.0"; \
+    echo "0.25 0.4";  echo "0.75 0.6"; )   > boostlow.txt
+
+  ( echo "0.0 0.0";  echo "1.0 1.0"; \
+    echo "0.25 0.1";  echo "0.75 0.9"; )   > boosthigh.txt
+
+  ( echo 'f(x) = a*x**3 + b*x**2 + c*x + d'; \
+    echo 'fit f(x) "boostlow.txt" via a, b, c, d'; \
+    echo 'print a,"*u^3 + ",b,"*u^2 + ",c,"*u + ",d'; \
+  ) | gnuplot 2>&1 | tail -1             > boostlow_funct.txt
+
+  ( echo 'f(x) = a*x**3 + b*x**2 + c*x + d'; \
+    echo 'fit f(x) "boosthigh.txt" via a, b, c, d'; \
+    echo 'print a,"*u^3 + ",b,"*u^2 + ",c,"*u + ",d'; \
+  ) | gnuplot 2>&1 | tail -1             > boosthigh_funct.txt

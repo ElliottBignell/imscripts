@@ -1,0 +1,32 @@
+#!/bin/bash
+
+PWD=`pwd | sed 's:^.*/\([^/]*\)$:\1:'`
+
+ls *_.tif | while read tif; do 
+
+    file=`echo "${tif}" | sed s:_.tif::`
+    NUMBER=`echo ${file} | sed 's:[^0-9]*\([0-9]*\)[^0-9]*.*:\1:'`
+
+    echo "Making ${file}.jpg from ${file}_.tif"
+    convert -quiet ${file}_.tif ${file}.jpg
+    ls -l ${file}.jpg
+    rm ${file}_.tif
+
+    DESCRIPTION=`exiftool *_.tif | grep "Image Description" | sed "s:.*\: *::"`
+
+    if [[ -z "${DESCRIPTION// }" ]]; then
+        DESCRIPTION=${PWD}
+    fi
+
+    KEYWORDS="${PWD},Schweiz,Rapperswil,Zuerchersee,Hotel,Schwanen"
+
+    NEFFILE=`find /media/Archive/${PWD}/DCIM/ -name "DSC_${NUMBER}.NEF" | head -n 1`
+    echo "${NEFFILE}; ${DESCRIPTION}; ${KEYWORDS}"
+    exiftool -tagsFromFile "${NEFFILE}" -Keywords="${KEYWORDS}" -ImageDescription="${DESCRIPTION}" -overwrite_original ${file}*
+
+    cp -n "${file}.jpg" jpegs/
+    mv -n "${file}.jpg" "/media/Archive/${PWD}/jpegs/"
+
+    mkdir --parents "/media/Archive/${PWD}/tifs/"; mv "${file}.tif" $_
+
+ done

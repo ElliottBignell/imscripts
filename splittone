@@ -1,0 +1,7 @@
+../curve 
+convert mantiuk_5383.jpg -colorspace Gray mantiuk_5383bw.jpg
+convert mantiuk_5383bw.jpg -channel blue -fx "`cat boostlow_funct.txt`"  -channel green -channel red -fx "`cat boosthigh_funct.txt`" mantiuk_5383st.jpg
+rm boost*.txt
+convert mantiuk_5383bw.jpg mantiuk_5383.jpg mantiuk_5383st.jpg mantiuk_5383.tif
+rm mantiuk_5383bw.jpg
+rm mantiuk_5383st.jpg

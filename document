@@ -1,0 +1,11 @@
+for FILE1 in "$*"
+do
+    echo $FILE1
+    ls man*.jpg | egrep -o [0-9]{4} | sed s:-:: | awk -v raw=${FILE1} '{ print "exiftool -tagsFromFile " raw "/DSC_" $1 ".JPG mantiuk_" $1 "*.jpg"; }' | sh
+    ls man*.jpg | egrep -o [0-9]{4} | sed s:-:: | awk -v raw=${FILE1} '{ print "exiftool -tagsFromFile " raw "/DSC_" $1 ".JPG mantiuk_" $1 "*.jpg"; }' | sh
+done
+
+ls | grep original | xargs rm
+
+ls man*.jpg | ~/getgpx | awk '{ print "gpscorrelate -r ~/GSLogger/" $2 " " $1; }' | sh
+ls man*.jpg | ~/getgpx | awk '{ print "gpscorrelate -g ~/GSLogger/" $2 " -z +2 " $1; }' | sh

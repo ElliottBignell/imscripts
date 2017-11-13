@@ -1,0 +1,18 @@
+(while read file; do
+
+    echo $file
+
+    convert ${file}.tif -blur 0x10 ${file}_blur.tif
+    convert ${file}_blur.tif -negate ${file}_blurneg.tif
+    composite -blend 50 ${file}_blurneg.tif ${file}.tif ${file}_bnb.tif
+    convert ${file}_bnb.tif -level 25600,37800 ${file}_sharp.tif
+
+    convert ${file}.tif \
+        \( ${file}_sharp.tif -alpha set -channel A -evaluate set 50% \) \
+        -compose overlay -composite \
+        ${file}_final.tif
+    #composite -dissolve 50% ${file}.tif ${file}_sharp.tif ${file}_final.tif
+
+    rm ./${file}_blur.tif ./${file}_blurneg.tif ./${file}_bnb.tif ${file}_sharp.tif
+
+done)

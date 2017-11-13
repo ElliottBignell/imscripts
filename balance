@@ -1,0 +1,23 @@
+(while read file; do
+
+    echo $file
+
+    convert ${file}.tif -channel R -separate ./${file}_red.tif
+    convert ${file}.tif -channel G -separate ./${file}_green.tif
+    convert ${file}.tif -channel B -separate ./${file}_blue.tif
+    
+    convert ./${file}_red.tif  -fx "`cat  red_funct.txt`" ./${file}_red.tif
+    convert ./${file}_blue.tif -fx "`cat blue_funct.txt`" ./${file}_blue.tif
+    
+    convert  ./${file}_red.tif ./${file}_green.tif ./${file}_blue.tif -set colorspace RGB -combine -set colorspace sRGB ./${file}_ra.tif
+
+    rm ./${file}_red.tif ./${file}_green.tif ./${file}_blue.tif
+
+    convert ${file}.tif \
+        \( ${file}_ra.tif -alpha set -channel A -evaluate set 100% \) -compose colorize -composite \
+        \( ${file}_ra.tif -alpha set -channel A -evaluate set  50% \) -compose Over     -composite \
+        ${file}st.tif
+
+    rm ./${file}_ra.tif
+
+done)

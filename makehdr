@@ -1,0 +1,400 @@
+#!/bin/bash
+# Does a batch of mantiuk HDRs then logs out
+
+: ${BASEDIR:=/media/TempPhotos}
+: ${WORKDIR:=${BASEDIR}/work}
+: ${TEMPDIR:=${BASEDIR}/tmp}
+: ${ORIGDIR:=${BASEDIR}/orig}
+: ${LOCALDIR:=${BASEDIR}/local}
+: ${XCFDIR:=${BASEDIR}/xcf}
+: ${BAKDIR:=${BASEDIR}/backup}
+: ${CARD:=/media/KINGSTON/}
+#: ${CARD:=/media/NIKON\ D300/}
+: ${TXTFILE:=$WORKDIR/hdr-list.txt}
+: ${GROUPFILE:=$WORKDIR/hdr-group.txt}
+: ${BAKFILE:=$TXTFILE.bak}
+: ${ORIGFILES:=$ORIGDIR/}
+
+removeTempImages() {
+
+    rm -f $WORKDIR/hdr*
+    rm -f $WORKDIR/enf_*
+#    rm -f $WORKDIR/mantiuk_*
+    rm -f $WORKDIR/fattal_*
+    rm -f $WORKDIR/drago_*
+    rm -f $WORKDIR/ca_*
+    rm -f $WORKDIR/ais_*
+    rm -f $WORKDIR/durand_*
+    rm -f $WORKDIR/patta_*
+    rm -f $WORKDIR/reinh_*
+    rm -f $WORKDIR/*.tif_original
+}
+
+fetchImages() {
+
+  echo "Fetching and converting raw images"
+
+  mkdir -p ${TEMPDIR}
+  mkdir -p ${XCFDIR}
+
+  MOUNTED=`mount | grep ${WORKDIR} | sed "s: .*$::"`
+
+  if [[ "${MOUNTED}" == /media/.* ]]; then
+    WORKDIR=${MOUNTED}
+  fi
+
+  MOUNTED=`mount | grep ${TEMPDIR} | sed "s: .*$::"`=
+
+  if [[ "${MOUNTED}" == /media/.* ]]; then
+    TEMPDIR=${MOUNTED}
+  fi
+
+  echo "Moving existing tif files from ${WORKDIR} to ${TEMPDIR}"
+  mv ${WORKDIR}/dsc*.tif ${TEMPDIR}/
+
+  rm -f $ORIGDIR/*
+  ls $WORKDIR/dsc* 2>/dev/null | grep _original | xargs rm -f
+  
+  echo "Reading card"
+
+  find "${CARD}" -name "*.NEF" 2>/dev/null | 
+  (while read file; do
+    cp "${file}" ${LOCALDIR}
+  done)
+
+  cp ~/.hdrff/hdrff.conf ~/.hdrff/hdrff.conf.bak
+
+  if [ "${IMG_EXT}" = "nef" ]; then
+    cat ~/.hdrff/hdrff.conf | sed s@IMG_EXT:=jpg@IMG_EXT:=nef@ > ~/hdrff.conf.org
+  else
+    cat ~/.hdrff/hdrff.conf | sed s@IMG_EXT:=nef@IMG_EXT:=jpg@ > ~/hdrff.conf.org
+  fi
+
+  mv ~/hdrff.conf.org ~/.hdrff/hdrff.conf
+
+  find "${LOCALDIR}" -iname "*.${IMG_EXT}" | 
+  (while read file; do
+
+    TARGET=`echo "${file}" | sed s:/.*/::g`
+    TARGET_LC=`echo "${TARGET}" | tr A-Z a-z`
+
+    if [ "${IMG_EXT}" = "jpg" ]; then
+        TIF=`echo "$TARGET_LC" | sed 's:.jpg:.tif:'`
+    else
+        TIF=`echo "$TARGET_LC" | sed 's:.nef:.tif:'`
+    fi
+
+    FOUNDTIF=`find $TEMPDIR -name ${TIF}`
+
+    if [ -n "${FOUNDTIF}" ]; then
+
+      rm -f ${file}
+      echo "Skipping TIF ${TIF}"
+      continue
+    else
+      echo "Doing TIF ${TIF}"
+    fi
+
+    FOUNDNEF=`find $ORIGDIR -name ${TARGET}`
+
+    if [ -n "${FOUNDNEF}" ]; then
+
+      rm -f ${file}
+      echo "Skipping RAW ${TARGET}"
+
+    else
+
+      cp "${file}" $ORIGDIR/
+      mv $ORIGDIR/$TARGET $ORIGDIR/$TARGET_LC
+
+    fi
+
+    hdrff fixDate 
+
+    if [ "${IMG_EXT}" = "jpg" ]; then
+      hdrff jpg2tif
+    else
+      hdrff raw2tif
+    fi
+
+    FOUNDTIF=`find $WORKDIR -name ${TIF}`
+
+    if [ -n "${FOUNDTIF}" ]; then
+      exiftool -tagsfromfile ${file} ${FOUNDTIF}
+      rm -f ${file}
+    else
+      echo "Failed to create TIF ${TIF}"
+    fi
+
+    rm -f $ORIGDIR/*
+    ls $WORKDIR/dsc* | grep _original | xargs rm -f
+  
+    mv ${WORKDIR}/dsc*.tif ${TEMPDIR}/
+
+  done)
+
+  mv ${TEMPDIR}/dsc*.tif ${WORKDIR}/
+  ls ${WORKDIR}/ | sed s:tif:jpg: | tr a-z A-Z | awk '{ print "rm -f /media/TempPhotos/local/" $1; }' | sh
+
+  hdrff setRO
+  #hdrff copyFiles
+  #hdrff name2lc
+}
+
+groupImages() {
+
+  match=${1}
+  echo "Organising groups for \"$match\""
+
+  cd ${WORKDIR}
+  ls dsc_*.tif > ${TXTFILE}
+  cd -
+
+  if [ -e $TXTFILE ]; then
+    cp $TXTFILE $BAKFILE
+    rm -f $TXTFILE
+  fi
+
+  exec 6<&0
+  exec<$BAKFILE
+  exec 6>&1
+  exec>$TXTFILE
+
+  curdate=`date`
+
+  echo "# HDR-list-file"
+  echo "# automatically created at ${curdate}"
+  echo ""
+
+  curaggregate=""
+  hascommas="[A-Za-z]+_[0-9]+\.tif(\,[A-Za-z]+_[0-9]+\.tif){2,6}"
+
+  while read curline; do
+
+      x=1
+
+      curgroup=`echo $curline | cut -d, -f$x`
+     
+      set - $(IFS=","; echo $curline)
+      ff=$# # number of fields    
+
+      while [  ${#curgroup} -gt 1 -a $x -le $ff ]; do
+
+	curtif=`echo $curgroup | cut -d '.' -f 1`
+	curnef="${ORIGFILES}${curtif}.${IMG_EXT}"
+
+	curls=""
+	
+	FOUNDNEF=`find $WORKDIR -name ${curnef}`
+	FOUNDTIF=`find $WORKDIR -name ${curtif}.tif`
+
+	if [ -n "${FOUNDNEF}" ]; then
+	  curls=`exiftool ${FOUNDNEF} | grep Exposure | grep Bracket | grep -v Flash | grep -v Shooting`
+	else
+	  curls=`exiftool ${FOUNDTIF} | grep Exposure | grep Bracket | grep -v Flash | grep -v Shooting`
+        fi
+
+	if [ -n "${curls}" ]; then
+
+	  curcomp=`echo $curls | cut -d ':' -f 2`
+
+	  if [[ ${curcomp} =~ ${match} ]]; then
+	    if [[ $curaggregate =~ $hascommas ]]; then
+	      if [[ ${#curaggregate} -lt 92 ]]; then
+		echo "$curaggregate"
+	      fi
+	    fi
+	    curaggregate="${curgroup}"
+	  else
+	    if [ ${#curaggregate} -gt 1 ]; then
+	      curaggregate="${curaggregate},${curgroup}"
+	    else
+	      curaggregate="${curgroup}"
+	    fi
+	  fi
+	fi
+
+	let x+=1
+
+	curgroup=""
+	curgroup=`echo $curline | cut -d ',' -f$x`
+
+      done
+
+  done
+
+  if [ ${#curaggregate} -gt 1 ]; then
+    if [[ ${#curaggregate} -lt 92 ]]; then
+      echo "$curaggregate"
+    fi
+  fi
+
+  exec 0<&6
+  exec 1>&6 
+  exec 6<&-
+  exec 6>&-
+}
+
+escape=$'\x1b' 
+key=""
+keep=true
+removetemp=true
+dieyabastard=false
+
+while getopts "ktd" flag
+do
+  case $flag in
+    d)
+      dieyabastard=true;;
+#     e)
+#       endmatch=" *\+2\/3";;
+    k)
+      keep=false;;
+    t)
+      removetemp=false;;
+    ?)
+      echo "TODO"
+      exit;;
+  esac
+done
+
+for IMG_EXT in "nef" "jpg"
+do
+
+  removeTempImages
+  
+  #for endmatch in "0"
+  for endmatch in " *0" " *\-2\/3" " *\+2\/3" " *\+1\/3" " *\-1\/3" #" *-2"
+  do
+
+    fetchImages
+  
+    echo "Doing group ${endmatch}"
+  
+    groupImages "${endmatch}"
+  
+    ls ${WORKDIR}/dsc_*.tif | sed 's:.tif:.${IMG_EXT}:' | sed 's:work:orig:' | xargs rm -f 
+  
+    cp $TXTFILE $GROUPFILE
+
+    mkdir -p /home/elliott/bilder/backup/
+    cp $GROUPFILE /home/elliott/bilder/backup/
+  
+    #exec 6<&0
+  
+    cd $WORKDIR
+  
+    echo "Converting groups"
+  
+    cat $GROUPFILE | grep -v ^# | 
+    (while read curline; do
+  
+        if [ -n "${curline}" ]; then
+  
+  	echo "Processing $curline"
+  
+  	TARGET_TIF=`echo ${curline} | awk -F, '{ print $1; }' | sed 's:dsc_:gimp_:'`
+  
+  	FOUND_GIMP_TIF=`find ${XCFDIR} -name ${TARGET_TIF}`
+  
+  	if [ -n "${FOUND_GIMP_TIF}" ]; then
+  	  echo "found ${FOUND_GIMP_TIF}"
+  	else
+  
+  	  if [ -e $TXTFILE ]; then
+  	    rm -f $TXTFILE
+  	  fi
+  
+  	  exec 6>&1
+  	  exec>$TXTFILE
+  
+  	  echo "$curline"
+  
+  	  exec 1>&6 6>&-
+  
+  	  hdrff alignModules 
+  	  hdrff enfuseImages 
+  
+  	  curfile=`echo $curline | cut -d '.' -f1`
+  	  curfile=`echo $curfile | cut -d '_' -f2`
+  	  
+  	  echo $curfile
+  
+  	  if [ -f "enf_${curfile}.tif" ]; then
+  
+  	    hdrff makeHDR
+  	    hdrff hdrModules 
+  	    #hdrff makeGIMP
+  
+  	    stack=`echo  $curline | sed "s:,.*$::g" | sed "s:dsc_\([0-9][0-9][0-9][0-9]\)*\.tif:enf_\1.tif mantiuk_\1.tif fattal_\1.tif mantiuk_\1.tif out_\1.tif :"`
+  
+  	    echo "Stacking $stack"
+  
+  	    convert $stack
+  	  
+  	    #mogrify -format tif $WORKDIR/*.xcf
+  
+  	    #rm -f $WORKDIR/*.xcf #/media/TempPhotos/xcf/
+  
+  	    SED="'s:[,]: $WORKDIR/:g'"
+  
+  	    stack=`echo  $curline | sed "s:,.*$::g" | sed "s:dsc_\([0-9][0-9][0-9][0-9]\)*\.tif:out_\1.tif :"`
+  	    exiftool -UserComment="HDR Generated by makehdr Script out of ${curline}" $WORKDIR/$stack 
+  	    
+  	    #mv $WORKDIR/out*.tif | $WORKDIR/../backup/
+  	    ls $WORKDIR/dsc* | grep _original | xargs rm -f
+  
+  	    # Since running as root (required for poweroff),
+  	    # set permissions and ownership before exiting
+  	    chown elliott:elliott $WORKDIR/*
+  	    mv $WORKDIR/gimp*.tif ${XCFDIR}/ # /home/elliott/bilder/work_/
+  	    #chown elliott:elliott /home/elliott/bilder/work_/*
+  
+  	  fi
+  
+  	  removeTempImages
+  
+  	fi
+  
+  	echo "rm -f ${curline}" | sed 's:,: :g' | sh
+        
+      fi
+  
+      #read -s -n1 -t1 key 
+  
+      if [ "$key" == "$escape" ] || [ "$key" == "x" ] || [ "$key" == "X" ]; then
+  	break
+      fi 
+  
+      key=""
+  
+    done)
+  
+    echo "Done group ${endmatch}"
+  
+    cd -
+  
+  done
+
+done
+
+
+#exec 0<&6 6<&-
+
+chmod +w $ORIGDIR/*
+
+# Clean up - only use this when loop has completed successfully
+#rm -f $WORKDIR/dsc_*
+rm -f $ORIGDIR/*
+
+if [ "$key" == "$escape" ]; then
+   exit
+fi
+
+# I've gone to bed. Stop whirring, bastard of a thing.
+#if [ $dieyabastard ]; then
+#  poweroff
+#fi
+
+# Shouldn't get this far!
+exit

@@ -1,0 +1,24 @@
+(while read file; do
+
+    filename=`echo $file | sed s:m.tif::`
+
+    if [ -e "${filename}.tif" ]; then
+        
+        if [ -e "${filename}m.tif" ]; then
+        
+            echo $filename
+        
+            convert ${filename}.tif \
+                \( ${filename}m.tif -alpha set -channel A -evaluate set 50% \) \
+                -compose overlay -composite \
+                \( ${filename}m.tif -alpha set -channel A -evaluate set 50% \) \
+                -compose Over -composite \
+                ${filename}s.tif
+        
+            convert ${filename}s.tif -contrast-stretch 0.1x0.1% ${filename}h.tif
+
+        fi
+
+    fi
+
+done)
